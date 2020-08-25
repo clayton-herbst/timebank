@@ -9,3 +9,6 @@ Cargo.lock
 
 # CONFIG
 Rocket.toml
+
+# Sqlite3
+*.db
