@@ -1,0 +1,11 @@
+# Build DIR
+/target
+
+# Cargo
+Cargo.lock
+
+# ENV
+.env
+
+# CONFIG
+Rocket.toml
