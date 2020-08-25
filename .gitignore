@@ -7,8 +7,5 @@ Cargo.lock
 # ENV
 .env
 
-# CONFIG
-Rocket.toml
-
 # Sqlite3
 *.db
