@@ -1,0 +1,28 @@
+html,
+body {
+	min-width: "100%";
+	min-height: "100%";
+	background-color: "#FFF";
+}
+
+.container {
+	flex-grow: 1;
+	justify-content: center;
+	align-items: center;
+}
+
+.label {
+	color: #222;
+	display: block;
+	margin-bottom: 10;
+	font-size: 14;
+	font: 600;
+	font-family: Georgia, "Times New Roman", Times, serif;
+}
+
+.text-input {
+	color: #222;
+	border-color: #999;
+	border-width: 1;
+	padding: 10;
+}
