@@ -3,13 +3,13 @@
 #[macro_use]
 extern crate rocket;
 
+use timebank::routes;
 use rocket_contrib::helmet::SpaceHelmet;
-use time_bank::routes;
 
 fn main() {
     rocket::ignite()
         .attach(SpaceHelmet::default())
         .mount("/", routes![routes::welcome, routes::static_files])
-        .mount("/api/", routes![routes::get_user_info])
+        .mount("/api/", routes![routes::get_user_info, routes::signup])
         .launch();
 }

@@ -1,6 +1,8 @@
-use rocket_contrib::json::{JsonValue};
-use rocket::response::NamedFile;
+use rocket_contrib::json::{JsonValue, Json};
+use rocket::response::{ NamedFile};
 use std::path::{PathBuf, Path};
+use super::models::NewUser;
+use rocket::http::Status;
 
 #[get("/")]
 pub fn welcome() -> Option<NamedFile> {
@@ -24,4 +26,11 @@ pub fn get_user_info() -> Option<JsonValue> {
 			"id": 83,
 			"values": [1, 2, 3, 4]
 	}))
+}
+
+#[post("/signup", data = "<user>")]
+pub fn signup<'r>(user: Json<NewUser>) -> Status {
+	println!("{:?}", user.into_inner());
+
+	Status::Ok
 }
