@@ -6,8 +6,11 @@ extern crate rocket;
 extern crate rocket_contrib;
 #[macro_use]
 extern crate diesel;
+extern crate crypto;
+
+#[database("main_db")]
+pub struct DbConn(diesel::SqliteConnection);
 
 pub mod models;
-pub mod schema;
-
 pub mod routes;
+pub mod schema;

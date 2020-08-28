@@ -18,3 +18,6 @@ port = 8000
 keep_alive = 5
 log = "critical"
 limits = { forms = 32768 }
+
+[global.databases]
+main_db = { url = "timebank.db", pool_size = 4 }

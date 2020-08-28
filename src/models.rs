@@ -1,15 +1,17 @@
-use crate::schema::users;
-use std::string::String;
 use std::fmt::Debug;
-use serde::{Serialize, Deserialize};
-use rocket::FromForm;
+use std::string::String;
 
-#[derive(Insertable, Serialize, Deserialize, FromForm, Debug)]
-#[table_name="users"]
-pub struct NewUser {
+use diesel::{Insertable, Queryable};
+use serde::{Deserialize, Serialize};
+
+use crate::schema::users;
+
+#[derive(Insertable, Queryable, Serialize, Deserialize, Debug)]
+#[table_name = "users"]
+pub struct User {
     pub id: String,
-		pub first_name: String,
-		pub family_name: String,
-		pub email: String,
-		pub dob: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub email: Option<String>,
+    pub dob: Option<String>,
 }

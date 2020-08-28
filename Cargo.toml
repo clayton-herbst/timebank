@@ -8,6 +8,7 @@ edition = "2018"
 rocket = "0.4.5"
 dotenv = "0.15.0"
 serde = { version = "1.0.115", features = ["derive"] }
+rust-crypto = "0.2.36"
 
 [dependencies.diesel]
 version = "1.4.4"
