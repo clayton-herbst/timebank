@@ -8,6 +8,7 @@ use rocket_contrib::json::{Json};
 use std::path::{Path, PathBuf};
 use diesel::result::{Error};
 use jsonwebtoken::{encode as jwt_encode, Header as jwt_Header, EncodingKey};
+use dotenv;
 
 // Local
 use request::NewUser;
@@ -42,7 +43,9 @@ pub fn login<'r>(conn: DbConn, username: String) -> LoginResponse {
         return LoginResponse::error(Some(String::from("Could not find user")));
     }
 
-    let auth_token = jwt_encode(&jwt_Header::default(), &user, &EncodingKey::from_secret("yolo".as_ref()));
+    let secret = dotenv::var("SECRET_KEY").expect("Unable to read SECRET_KEY from .env");
+
+    let auth_token = jwt_encode(&jwt_Header::default(), &user, &EncodingKey::from_secret(secret.as_ref()));
 
     match auth_token {
         Ok(token) => {
