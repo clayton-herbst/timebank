@@ -23,7 +23,7 @@ impl User {
         users::table.find(id).first::<User>(&*conn)
     }
 
-    pub fn create_user(conn: DbConn, user: &User) -> QueryResult<usize> {
+    pub fn add_user(conn: DbConn, user: &User) -> QueryResult<usize> {
         diesel::insert_into(users::table).values(user).execute(&*conn)
     }
 }

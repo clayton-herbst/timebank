@@ -1,14 +1,17 @@
-pub mod data;
 pub mod request;
+pub mod helpers;
+pub mod response;
+pub mod headers;
 
-use rocket::response::{NamedFile, status};
+use rocket::response::NamedFile;
 use rocket_contrib::json::{Json};
 use std::path::{Path, PathBuf};
 use diesel::result::{Error};
+use jsonwebtoken::{encode as jwt_encode, Header as jwt_Header, EncodingKey};
 
 // Local
-use self::data::{NewUser};
-use self::request::{generate_hash, LoginResponse, JsonResponse};
+use request::NewUser;
+use response::{LoginResponse, Response};
 use crate::models::User;
 use crate::DbConn;
 
@@ -31,27 +34,42 @@ pub fn static_files(file: PathBuf) -> Option<NamedFile> {
 }
 
 #[get("/login?<username>")]
-pub fn login(conn: DbConn, username: String) -> LoginResponse {
-    let id = generate_hash(username.as_str()); 
+pub fn login<'r>(conn: DbConn, username: String) -> LoginResponse {
+    let id = helpers::generate_hash(username.as_str()); 
     let user: Option<User> = User::get_user(conn, id.as_str()).ok();
 
-    LoginResponse::new(user)
+    if user.is_none() {
+        return LoginResponse::error(Some(String::from("Could not find user")));
+    }
+
+    let auth_token = jwt_encode(&jwt_Header::default(), &user, &EncodingKey::from_secret("yolo".as_ref()));
+
+    match auth_token {
+        Ok(token) => {
+            LoginResponse::success(token)
+        },
+        Err(err) => {
+            println!("{:?}", err);
+
+            LoginResponse::error(Some(err.to_string()))
+        }
+    }
 }
 
 #[post("/signup", data = "<user>")]
-pub fn signup<'r>(conn: DbConn, user: Json<NewUser>) -> Result<status::Accepted::<Json::<JsonResponse>>, status::Conflict::<String>> {
-    let user_entry: User = user.into_inner().create_user();
+pub fn signup<'r>(conn: DbConn, user: Json<NewUser>) -> Response {
+    let user_entry: User = user.into_inner().into();
 
-    let query_err: Option<Error> = User::create_user(conn, &user_entry).err();
+    let db_query_err: Option<Error> = User::add_user(conn, &user_entry).err();
 
-    match query_err {
+    match db_query_err {
         Some(err) => {
             println!("{}", err);
             
-            Err(status::Conflict(Some(err.to_string())))
+            Response::error(Some(err.to_string()))
         },
         None => {
-            Ok(status::Accepted(Some(Json(JsonResponse::ok()))))
+            Response::default()
         }
     }
 }
