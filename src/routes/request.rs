@@ -1,90 +1,103 @@
 use std::string::String;
-use std::fmt::Debug;
-use std::convert::{From, Into};
 use crypto::sha1::Sha1;
 use crypto::digest::Digest;
-use rocket::http::{Status, RawStr};
-use rocket::{Outcome};
-use rocket::request::{self, Request, FromRequest, FromFormValue};
-use diesel::prelude::*;
+use rocket::{Responder};
+use rocket::http::{ContentType, Header};
+use rocket_contrib::json::Json;
+use serde::{Deserialize, Serialize};
+use jsonwebtoken::{encode as jwt_encode, Header as jwt_Header, EncodingKey};
 
 // Local
-use crate::schema::users;
 use crate::models::User;
-use crate::DbConn;
 
-#[derive(Debug)]
-pub struct UserId {
-	id: String
+#[derive(Deserialize, Serialize)]
+pub struct JsonResponse {
+	ok: bool,
+	message: Option<String>
 }
 
-#[derive(Debug)]
-pub enum UserIdError {
-	Missing,
-	NotExist
+struct TokenHeader {
+	token: Option<String>
 }
 
-impl UserId {
-	pub fn new(id: String) -> UserId {
-		let mut hasher = Sha1::new();
-		hasher.input_str(&id);
-
-		UserId {
-			id: hasher.result_str()
+impl TokenHeader {
+	pub fn new(token: Option<String>) -> Self {
+		TokenHeader {
+			token: token
 		}
 	}
 }
 
-impl<'a, 'r> FromRequest<'a, 'r> for UserId {
-	type Error = UserIdError;
+impl<'r> Into<Header<'r>> for TokenHeader {
+	fn into(self) -> Header<'r> {
+		match self.token {
+			Some(t) => Header::new("token", t),
+			None => Header::new("token", "")
+		}
+	}
+}
 
-	fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
-		let username_query: Option<UserId> = request.get_query_value("id")
-			.and_then(|q| q.ok());
+impl JsonResponse {
+	pub fn ok() -> Self {
+		JsonResponse {
+			ok: true,
+			message: None
+		}
+	}
+	
+	pub fn err(message: &str) -> Self {
+		JsonResponse {
+			ok: false,
+			message: Some(message.to_owned())
+		}
+	}
+}
 
-		let conn = request.guard::<DbConn>().unwrap();
 
-		let query_result = username_query.map(|id| users::table.find::<String>(id.into()).first::<User>(&*conn).unwrap());
+#[derive(Responder)]
+pub struct LoginResponse {
+	// Responder object
+	inner: Json<JsonResponse>,
+	// Headers
+	content_type: ContentType,
+	token: TokenHeader
+}
 
-		match query_result {
-			Some(user) => {
-				println!("{:?}", user);
-				Outcome::Success(UserId::new(user.id))
+impl LoginResponse {
+	pub fn new(user: Option<User>) -> Self {
+		if user.is_none() {
+			return LoginResponse {
+				inner: Json(JsonResponse::err("Could not find user")),
+				content_type: ContentType::JSON,
+				token: TokenHeader::new(None)
+			}
+		}
+
+		let encoded_token = jwt_encode(&jwt_Header::default(), &user, &EncodingKey::from_secret("yolo".as_ref()));
+
+		match encoded_token {
+			Ok(token) => {
+				LoginResponse {
+					inner: Json(JsonResponse::ok()),
+					content_type: ContentType::JSON,
+					token: TokenHeader::new(Some(token)),
+				}
 			},
-			None => Outcome::Failure((Status::NoContent, UserIdError::NotExist))
+			Err(err) => {
+				println!("{:?}", err);
+
+				LoginResponse {
+					inner: Json(JsonResponse::err("Error generating authorisation token")),
+					content_type: ContentType::JSON,
+					token: TokenHeader::new(None)
+				}
+			}
 		}
 	}
 }
 
-impl<'v> FromFormValue<'v> for UserId {
-    type Error = UserIdError;
-
-    fn from_form_value(form_value: &'v RawStr) -> Result<Self, Self::Error> {
-        match form_value.parse::<String>() {
-            Ok(id) => Ok(UserId::new(id)),
-            _ => Err(UserIdError::Missing),
-        }
-	}
-}
-
-impl From<String> for UserId {
-	fn from(id: String) -> Self {
-		UserId {
-			id: id
-		}
-	}
-}
-
-impl Into<String> for UserId {
-	fn into(self) -> String {
-		self.id
-	}
-}
-
-impl From<&'_ str> for UserId {
-	fn from(id: &'_ str) -> Self {
-		UserId {
-			id: String::from(id)
-		}
-	}
+pub fn generate_hash(id: &str) -> String {
+	let mut hasher = Sha1::new();
+	hasher.input_str(&id);
+	hasher.result_str()
 }

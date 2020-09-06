@@ -1,16 +1,14 @@
 pub mod data;
 pub mod request;
 
-use rocket::http::Status;
-use rocket::response::NamedFile;
-use diesel::prelude::*;
+use rocket::response::{NamedFile, status};
 use rocket_contrib::json::{Json};
 use std::path::{Path, PathBuf};
+use diesel::result::{Error};
 
 // Local
 use self::data::{NewUser};
-use self::request::{UserId, UserIdError};
-use crate::schema::users;
+use self::request::{generate_hash, LoginResponse, JsonResponse};
 use crate::models::User;
 use crate::DbConn;
 
@@ -32,36 +30,28 @@ pub fn static_files(file: PathBuf) -> Option<NamedFile> {
     NamedFile::open(Path::new("public/static/").join(path_buf)).ok()
 }
 
-#[get("/login")]
-pub fn get_user_info(id: Result<UserId, UserIdError>) -> Option<Status> { 
+#[get("/login?<username>")]
+pub fn login(conn: DbConn, username: String) -> LoginResponse {
+    let id = generate_hash(username.as_str()); 
+    let user: Option<User> = User::get_user(conn, id.as_str()).ok();
 
-    match id {
-        Ok(id) => {
-            println!("{:?}", id);
-            Some(Status::Ok)
-        },
-        Err(e) => {
-            println!("{:?}", e);
-            None
-        }
-    }
+    LoginResponse::new(user)
 }
 
 #[post("/signup", data = "<user>")]
-pub fn signup(conn: DbConn, user: Json<NewUser>) -> Option<Status> {
-    let user_entry: User = user.into_inner().create_user().unwrap();
+pub fn signup<'r>(conn: DbConn, user: Json<NewUser>) -> Result<status::Accepted::<Json::<JsonResponse>>, status::Conflict::<String>> {
+    let user_entry: User = user.into_inner().create_user();
 
-    let response = diesel::insert_into(users::table).values(user_entry).execute(&*conn);
+    let query_err: Option<Error> = User::create_user(conn, &user_entry).err();
 
-    match response {
-        Ok(v) => {
-            println!("{}", v);
-            Some(Status::Ok)
+    match query_err {
+        Some(err) => {
+            println!("{}", err);
+            
+            Err(status::Conflict(Some(err.to_string())))
         },
-        Err(e) => {
-            println!("{}", e);
-
-            Some(Status::InternalServerError)
+        None => {
+            Ok(status::Accepted(Some(Json(JsonResponse::ok()))))
         }
     }
 }
