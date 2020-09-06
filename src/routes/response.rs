@@ -1,13 +1,14 @@
 use std::string::String;
 use std::fmt::Debug;
 use std::default::Default;
-use rocket::{Responder};
+use rocket::Responder;
 use rocket::http::ContentType;
 use rocket_contrib::json::{Json, JsonValue};
 use serde::{Deserialize, Serialize};
 use super::headers::TokenHeader;
 
 #[derive(Responder)]
+#[response(status = 202)]
 pub struct TokenResponse {
 	inner: Json<JsonValue>,
 	content_type: ContentType,
@@ -60,7 +61,7 @@ impl ErrorResponse {
 	pub fn new(message: String) -> ErrorResponse {
 		ErrorResponse {
 			inner: Json(ErrorJson::new(message)),
-			content_type: ContentType::JSON
+			content_type: ContentType::JSON,
 		}
 	}
 }
@@ -69,7 +70,7 @@ impl Default for ErrorResponse {
 	fn default() -> ErrorResponse {
 		ErrorResponse {
 			inner: Json(ErrorJson::default()),
-			content_type: ContentType::JSON
+			content_type: ContentType::JSON,
 		}
 	}
 }
@@ -95,7 +96,9 @@ impl LoginResponse {
 
 #[derive(Responder)]
 pub enum Response {
+	#[response(status = 200)]
 	Success(Json<JsonValue>),
+	#[response(status = 500)]
 	Error(ErrorResponse)
 }
 

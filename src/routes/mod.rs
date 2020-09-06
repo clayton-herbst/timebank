@@ -3,9 +3,9 @@ pub mod helpers;
 pub mod response;
 pub mod headers;
 
+use std::path::{Path, PathBuf};
 use rocket::response::NamedFile;
 use rocket_contrib::json::{Json};
-use std::path::{Path, PathBuf};
 use diesel::result::{Error};
 use jsonwebtoken::{encode as jwt_encode, Header as jwt_Header, EncodingKey};
 use dotenv;
