@@ -11,6 +11,9 @@ fn main() {
         .attach(SpaceHelmet::default())
         .attach(DbConn::fairing())
         .mount("/", routes![routes::welcome, routes::static_files])
-        .mount("/api/", routes![routes::login, routes::signup])
+        .mount(
+            "/api/",
+            routes![routes::login, routes::signup, routes::protect],
+        )
         .launch();
 }

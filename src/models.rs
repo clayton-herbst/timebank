@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use std::string::String;
 
 use diesel::prelude::*;
-use diesel::{Insertable, Queryable, QueryResult};
+use diesel::{Insertable, QueryResult, Queryable};
 use serde::{Deserialize, Serialize};
 
 use crate::schema::users;
@@ -24,6 +24,8 @@ impl User {
     }
 
     pub fn add_user(conn: DbConn, user: &User) -> QueryResult<usize> {
-        diesel::insert_into(users::table).values(user).execute(&*conn)
+        diesel::insert_into(users::table)
+            .values(user)
+            .execute(&*conn)
     }
 }
