@@ -13,7 +13,7 @@ fn main() {
         .mount("/", routes![routes::welcome, routes::static_files])
         .mount(
             "/api/",
-            routes![routes::login, routes::signup, routes::protect],
+            routes![routes::login, routes::signup, routes::protect, routes::statuses, routes::categories],
         )
         .launch();
 }

@@ -1,4 +1,3 @@
-use super::headers::TokenHeader;
 use rocket::http::ContentType;
 use rocket::Responder;
 use rocket_contrib::json::{Json, JsonValue};
@@ -6,6 +5,9 @@ use serde::{Deserialize, Serialize};
 use std::default::Default;
 use std::fmt::Debug;
 use std::string::String;
+
+// Local
+use super::headers::TokenHeader;
 
 #[derive(Responder)]
 #[response(status = 202)]
