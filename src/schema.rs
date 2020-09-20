@@ -6,14 +6,14 @@ table! {
         short_description -> Nullable<Text>,
         start_date -> Integer,
         end_date -> Integer,
-        category_id -> Integer,
-        status_id -> Integer,
+        category_id -> Text,
+        status_id -> Text,
     }
 }
 
 table! {
     categories (id) {
-        id -> Integer,
+        id -> Text,
         name -> Text,
         description -> Nullable<Text>,
     }
@@ -21,7 +21,7 @@ table! {
 
 table! {
     statuses (id) {
-        id -> Integer,
+        id -> Text,
         name -> Text,
         description -> Nullable<Text>,
     }

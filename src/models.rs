@@ -34,7 +34,7 @@ impl User {
 #[derive(Insertable, Queryable, Serialize, Deserialize, Debug)]
 #[table_name = "categories"]
 pub struct Category {
-    pub id: i32,
+    pub id: String,
     pub name: String,
     pub description: Option<String>
 }
@@ -54,7 +54,7 @@ impl Category {
 #[derive(Insertable, Queryable, Serialize, Deserialize, Debug)]
 #[table_name = "statuses"]
 pub struct Status {
-    pub id: i32,
+    pub id: String,
     pub name: String,
     pub description: Option<String>
 }
@@ -80,8 +80,8 @@ pub struct Activity {
     pub short_description: Option<String>,
     pub start_date: i32,
     pub end_date: i32,
-    pub category_id: i32,
-    pub status_id: i32,
+    pub category_id: String,
+    pub status_id: String,
 }
 
 impl Activity {

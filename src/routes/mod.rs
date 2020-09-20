@@ -4,15 +4,13 @@ pub mod helpers;
 pub mod request;
 pub mod response;
 
-use std::result::Result;
 use diesel::result::Error;
 use rocket::response::NamedFile;
-use rocket::response::status::NotFound;
 use rocket_contrib::json::Json;
 use std::path::{Path, PathBuf};
 
 // Local
-use crate::models::{User, Status, Category};
+use crate::models::{User, Status, Category, Activity};
 use crate::DbConn;
 use auth::{AuthTokenBuilder, UserClaims};
 use request::{AuthReq, NewUser};
@@ -75,7 +73,7 @@ pub fn protect(authorized: AuthReq) -> Response {
     match authorized {
         AuthReq::Valid(id) => {
             println!("{}", id);
-            Response::success()
+            Response::default()
         }
         AuthReq::InValid(err_str) => Response::error(Some(err_str)),
         AuthReq::NoToken => Response::error(Some(String::from("Bad Request"))),
@@ -83,17 +81,40 @@ pub fn protect(authorized: AuthReq) -> Response {
 }
 
 #[get("/statuses")]
-pub fn statuses(conn: DbConn) -> Result<Json<Vec<Status>>,  NotFound<String>> {
+pub fn statuses(conn: DbConn) -> Response {
     match Status::all(conn) {
-        Ok(results) => Ok(Json(results)),
-        Err(err) => Err(NotFound(err.to_string()))
+        Ok(results) => Response::success(results),
+        Err(err) => Response::error(Some(err.to_string()))
     }
 }
 
 #[get("/categories")]
-pub fn categories(conn: DbConn) -> Result<Json<Vec<Category>>, NotFound<String>> {
+pub fn categories(conn: DbConn) -> Response {
     match Category::all(conn) {
-        Ok(results) => Ok(Json(results)),
-        Err(err) => Err(NotFound(err.to_string()))
+        Ok(results) => Response::success(results),
+        Err(err) => Response::error(Some(err.to_string()))
+    }
+}
+
+#[get("/activities")]
+pub fn activities(auth: AuthReq, conn: DbConn) -> Response {
+    let auth_req: Result<String, String> = match auth {
+        AuthReq::Valid(id) => {
+            println!("{}", id);
+            Ok(id)
+        },
+        AuthReq::InValid(err_str) => Err(err_str),
+        AuthReq::NoToken => Err(String::from("Bad request")),
+    };
+
+    if auth_req.is_err() {
+        return Response::error(auth_req.err());
+    }
+    
+    let user_id: String = auth_req.ok().expect("Expected user_id in request jwt token");
+    
+    match Activity::user_all(conn, &user_id) {
+        Ok(results) => Response::success(results),
+        Err(err) => Response::error(Some(err.to_string()))
     }
 }

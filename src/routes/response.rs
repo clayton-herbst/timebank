@@ -110,10 +110,10 @@ impl Default for Response {
 }
 
 impl Response {
-    pub fn success() -> Response {
-        Response::Success(Json(json!({
-            "ok": true
-        })))
+    pub fn success<T>(body: T) -> Response
+        where T: Serialize
+    {
+        Response::Success(Json(json!(body)))
     }
 
     pub fn error(message: Option<String>) -> Response {
