@@ -1,7 +1,3 @@
-pub mod auth;
-pub mod headers;
-pub mod helpers;
-pub mod request;
 pub mod response;
 
 use diesel::result::Error;
@@ -9,16 +5,25 @@ use rocket::response::NamedFile;
 use rocket_contrib::json::Json;
 use std::path::{Path, PathBuf};
 
+// Controllers
+use crate::controllers::auth::{ProtectedRequest, LoginController};
+
+// Models
+use crate::models::database::{User, Status, Category, Activity, DbConn};
+use crate::models::auth::SignUpUser;
+use crate::models::activity::{NewActivity};
+
 // Local
-use crate::models::{User, Status, Category, Activity};
-use crate::DbConn;
-use auth::{AuthTokenBuilder, UserClaims};
-use request::{AuthReq, NewUser};
-use response::{LoginResponse, Response};
+use response::{Response};
 
 #[get("/")]
 pub fn welcome() -> Option<NamedFile> {
     NamedFile::open(Path::new("public/index.html")).ok()
+}
+
+#[get("/health")]
+pub fn health() -> &'static str {
+    "RustBank server is healthy"
 }
 
 #[get("/static/<file..>")]
@@ -33,27 +38,13 @@ pub fn static_files(file: PathBuf) -> Option<NamedFile> {
     NamedFile::open(Path::new("public/static/").join(path_buf)).ok()
 }
 
-#[get("/login?<username>")]
-pub fn login(conn: DbConn, username: String) -> LoginResponse {
-    let id = helpers::generate_hash(username.as_str());
-    let user: Option<User> = User::get_user(conn, id.as_str()).ok();
-
-    if user.is_none() {
-        return LoginResponse::error(Some(String::from("Could not find user")));
-    }
-
-    let auth_builder = AuthTokenBuilder::default();
-
-    let auth_token = auth_builder.encode(UserClaims::from(user.unwrap()));
-
-    match auth_token {
-        Ok(token) => LoginResponse::success(token),
-        Err(err) => LoginResponse::error(Some(err.to_string())),
-    }
+#[get("/login")]
+pub fn login(controller: LoginController) -> LoginController {
+    controller
 }
 
 #[post("/signup", data = "<user>")]
-pub fn signup(conn: DbConn, user: Json<NewUser>) -> Response {
+pub fn signup(conn: DbConn, user: Json<SignUpUser>) -> Response {
     let user_entry: User = user.into_inner().into();
 
     let db_query_err: Option<Error> = User::add_user(conn, &user_entry).err();
@@ -69,18 +60,13 @@ pub fn signup(conn: DbConn, user: Json<NewUser>) -> Response {
 }
 
 #[get("/protect")]
-pub fn protect(authorized: AuthReq) -> Response {
-    match authorized {
-        AuthReq::Valid(id) => {
-            println!("{}", id);
-            Response::default()
-        }
-        AuthReq::InValid(err_str) => Response::error(Some(err_str)),
-        AuthReq::NoToken => Response::error(Some(String::from("Bad Request"))),
-    }
+pub fn protect(token: ProtectedRequest) -> Response {
+    println!("{}", token.id);
+
+    Response::default()
 }
 
-#[get("/statuses")]
+#[get("/status/all")]
 pub fn statuses(conn: DbConn) -> Response {
     match Status::all(conn) {
         Ok(results) => Response::success(results),
@@ -88,7 +74,7 @@ pub fn statuses(conn: DbConn) -> Response {
     }
 }
 
-#[get("/categories")]
+#[get("/category/all")]
 pub fn categories(conn: DbConn) -> Response {
     match Category::all(conn) {
         Ok(results) => Response::success(results),
@@ -96,24 +82,16 @@ pub fn categories(conn: DbConn) -> Response {
     }
 }
 
-#[get("/activities")]
-pub fn activities(auth: AuthReq, conn: DbConn) -> Response {
-    let auth_req: Result<String, String> = match auth {
-        AuthReq::Valid(id) => {
-            println!("{}", id);
-            Ok(id)
-        },
-        AuthReq::InValid(err_str) => Err(err_str),
-        AuthReq::NoToken => Err(String::from("Bad request")),
-    };
+#[post("/activity", data = "<activity>")]
+pub fn add_activity(_conn: DbConn, activity: Json<NewActivity>) -> Response {
+    println!("{:?}", activity.into_inner());
 
-    if auth_req.is_err() {
-        return Response::error(auth_req.err());
-    }
-    
-    let user_id: String = auth_req.ok().expect("Expected user_id in request jwt token");
-    
-    match Activity::user_all(conn, &user_id) {
+    Response::default()
+}
+
+#[get("/activity/all")]
+pub fn activities(token: ProtectedRequest, conn: DbConn) -> Response {
+    match Activity::user_all(conn, &token.id) {
         Ok(results) => Response::success(results),
         Err(err) => Response::error(Some(err.to_string()))
     }

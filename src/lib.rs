@@ -8,9 +8,8 @@ extern crate rocket_contrib;
 extern crate diesel;
 extern crate crypto;
 
-#[database("main_db")]
-pub struct DbConn(diesel::SqliteConnection);
-
 pub mod models;
 pub mod routes;
+pub mod helpers;
+pub mod controllers;
 pub mod schema;

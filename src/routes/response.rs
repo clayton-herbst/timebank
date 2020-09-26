@@ -5,26 +5,24 @@ use serde::{Deserialize, Serialize};
 use std::default::Default;
 use std::fmt::Debug;
 use std::string::String;
-
-// Local
-use super::headers::TokenHeader;
+use rocket::http::Header;
 
 #[derive(Responder)]
 #[response(status = 202)]
-pub struct TokenResponse {
+pub struct TokenResponse<'h> {
     inner: Json<JsonValue>,
     content_type: ContentType,
-    token: TokenHeader,
+    token: Header<'h>,
 }
 
-impl TokenResponse {
+impl<'h> TokenResponse<'h> {
     fn new(token: String) -> Self {
         TokenResponse {
             inner: Json(json!({
                 "ok": true
             })),
             content_type: ContentType::JSON,
-            token: TokenHeader::new(token),
+            token: Header::new("token", token),
         }
     }
 }
@@ -75,17 +73,17 @@ impl Default for ErrorResponse {
 }
 
 #[derive(Responder)]
-pub enum LoginResponse {
-    Success(TokenResponse),
+pub enum LoginResponse<'h> {
+    Success(TokenResponse<'h>),
     Error(ErrorResponse),
 }
 
-impl LoginResponse {
-    pub fn success(token: String) -> LoginResponse {
+impl<'h> LoginResponse<'h> {
+    pub fn success(token: String) -> LoginResponse<'h> {
         LoginResponse::Success(TokenResponse::new(token))
     }
 
-    pub fn error(message: Option<String>) -> LoginResponse {
+    pub fn error(message: Option<String>) -> LoginResponse<'h> {
         match message {
             Some(m) => LoginResponse::Error(ErrorResponse::new(m)),
             None => LoginResponse::Error(ErrorResponse::default()),

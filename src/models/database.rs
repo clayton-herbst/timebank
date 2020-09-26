@@ -5,9 +5,11 @@ use diesel::result;
 use diesel::{Insertable, Queryable};
 use serde::{Deserialize, Serialize};
 
-// Local
+// Database
 use crate::schema::*;
-use crate::DbConn;
+
+#[database("main_db")]
+pub struct DbConn(diesel::SqliteConnection);
 
 #[derive(Insertable, Queryable, Serialize, Deserialize, Debug)]
 #[table_name = "users"]

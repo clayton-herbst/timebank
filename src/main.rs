@@ -4,7 +4,12 @@
 extern crate rocket;
 
 use rocket_contrib::helmet::SpaceHelmet;
-use timebank::{routes, DbConn};
+
+// Models
+use timebank::models::database::DbConn;
+
+// Routes
+use timebank::routes;
 
 fn main() {
     rocket::ignite()
@@ -13,7 +18,7 @@ fn main() {
         .mount("/", routes![routes::welcome, routes::static_files])
         .mount(
             "/api/",
-            routes![routes::login, routes::signup, routes::protect, routes::statuses, routes::categories, routes::activities]
+            routes![routes::health, routes::login, routes::signup, routes::protect, routes::statuses, routes::categories, routes::activities, routes::add_activity]
         )
         .launch();
 }
