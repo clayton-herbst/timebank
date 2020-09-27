@@ -1,9 +1,9 @@
+use chrono::offset::Utc;
+use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use std::convert::Into;
 use std::fmt::Debug;
 use std::string::String;
-use chrono::offset::Utc;
-use chrono::DateTime;
 
 // Models
 use crate::models::database::User;
@@ -35,7 +35,7 @@ impl Into<User> for SignUpUser {
 }
 
 /// JWT Token Contents
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TokenClaims {
     exp: i64,
     pub id: String,

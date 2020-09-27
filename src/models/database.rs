@@ -1,9 +1,9 @@
-use std::fmt::Debug;
-use std::string::String;
 use diesel::prelude::*;
 use diesel::result;
 use diesel::{Insertable, Queryable};
 use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
+use std::string::String;
 
 // Database
 use crate::schema::*;
@@ -11,7 +11,7 @@ use crate::schema::*;
 #[database("main_db")]
 pub struct DbConn(diesel::SqliteConnection);
 
-#[derive(Insertable, Queryable, Serialize, Deserialize, Debug)]
+#[derive(Insertable, Queryable, Serialize, Deserialize, Debug, Clone)]
 #[table_name = "users"]
 pub struct User {
     pub id: String,
@@ -38,7 +38,7 @@ impl User {
 pub struct Category {
     pub id: String,
     pub name: String,
-    pub description: Option<String>
+    pub description: Option<String>,
 }
 
 impl Category {
@@ -46,10 +46,19 @@ impl Category {
         categories::table.load::<Category>(&*conn)
     }
 
-    pub fn add<'a>(conn: DbConn, name: &'a str, description: Option<&'a str>) -> result::QueryResult<usize> {
-        let value = (categories::name.eq(name.to_owned()), categories::description.eq(description.map(|v| v.to_owned())));
+    pub fn add<'a>(
+        conn: DbConn,
+        name: &'a str,
+        description: Option<&'a str>,
+    ) -> result::QueryResult<usize> {
+        let value = (
+            categories::name.eq(name.to_owned()),
+            categories::description.eq(description.map(|v| v.to_owned())),
+        );
 
-        diesel::insert_into(categories::table).values(value).execute(&*conn)
+        diesel::insert_into(categories::table)
+            .values(value)
+            .execute(&*conn)
     }
 }
 
@@ -58,7 +67,7 @@ impl Category {
 pub struct Status {
     pub id: String,
     pub name: String,
-    pub description: Option<String>
+    pub description: Option<String>,
 }
 
 impl Status {
@@ -66,10 +75,19 @@ impl Status {
         statuses::table.load::<Status>(&*conn)
     }
 
-    pub fn add<'a>(conn: DbConn, name: &'a str, description: Option<&'a str>) -> result::QueryResult<usize> {
-        let value = (statuses::name.eq(name.to_owned()), statuses::description.eq(description.map(|v| v.to_owned())));
+    pub fn add<'a>(
+        conn: DbConn,
+        name: &'a str,
+        description: Option<&'a str>,
+    ) -> result::QueryResult<usize> {
+        let value = (
+            statuses::name.eq(name.to_owned()),
+            statuses::description.eq(description.map(|v| v.to_owned())),
+        );
 
-        diesel::insert_into(statuses::table).values(value).execute(&*conn)
+        diesel::insert_into(statuses::table)
+            .values(value)
+            .execute(&*conn)
     }
 }
 
@@ -88,6 +106,8 @@ pub struct Activity {
 
 impl Activity {
     pub fn user_all<'a>(conn: DbConn, user_id: &'a str) -> result::QueryResult<Vec<Activity>> {
-        activities::table.filter(activities::user_id.eq(user_id)).load::<Activity>(&*conn)
+        activities::table
+            .filter(activities::user_id.eq(user_id))
+            .load::<Activity>(&*conn)
     }
 }

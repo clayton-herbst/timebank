@@ -1,20 +1,18 @@
-pub mod response;
-
-use diesel::result::Error;
-use rocket::response::NamedFile;
+use rocket::response::{self, NamedFile};
 use rocket_contrib::json::Json;
 use std::path::{Path, PathBuf};
 
 // Controllers
-use crate::controllers::auth::{ProtectedRequest, LoginController};
+use crate::controllers::auth::ProtectedRequest;
+use crate::controllers::login::LoginController;
 
 // Models
-use crate::models::database::{User, Status, Category, Activity, DbConn};
+use crate::models::activity::NewActivity;
 use crate::models::auth::SignUpUser;
-use crate::models::activity::{NewActivity};
+use crate::models::database::{Activity, Category, DbConn, Status, User};
 
-// Local
-use response::{Response};
+// Helpers
+use crate::helpers::http_response;
 
 #[get("/")]
 pub fn welcome() -> Option<NamedFile> {
@@ -44,55 +42,48 @@ pub fn login(controller: LoginController) -> LoginController {
 }
 
 #[post("/signup", data = "<user>")]
-pub fn signup(conn: DbConn, user: Json<SignUpUser>) -> Response {
-    let user_entry: User = user.into_inner().into();
+pub fn signup<'r>(_conn: DbConn, user: Json<SignUpUser>) -> response::Result<'r> {
+    let _user_entry: User = user.into_inner().into();
 
-    let db_query_err: Option<Error> = User::add_user(conn, &user_entry).err();
+    //let db_query_err: Option<Error> = User::add_user(conn, &user_entry).err();
 
-    match db_query_err {
-        Some(err) => {
-            println!("{}", err);
-
-            Response::error(Some(err.to_string()))
-        }
-        None => Response::default(),
-    }
+    http_response::internal_server_error()
 }
 
 #[get("/protect")]
-pub fn protect(token: ProtectedRequest) -> Response {
+pub fn protect<'r>(token: ProtectedRequest) -> response::Result<'r> {
     println!("{}", token.id);
 
-    Response::default()
+    http_response::internal_server_error()
 }
 
 #[get("/status/all")]
-pub fn statuses(conn: DbConn) -> Response {
+pub fn statuses<'r>(conn: DbConn) -> response::Result<'r> {
     match Status::all(conn) {
-        Ok(results) => Response::success(results),
-        Err(err) => Response::error(Some(err.to_string()))
+        Ok(results) => http_response::success(results),
+        Err(_) => http_response::internal_server_error(),
     }
 }
 
 #[get("/category/all")]
-pub fn categories(conn: DbConn) -> Response {
+pub fn categories<'r>(conn: DbConn) -> response::Result<'r> {
     match Category::all(conn) {
-        Ok(results) => Response::success(results),
-        Err(err) => Response::error(Some(err.to_string()))
+        Ok(results) => http_response::success(results),
+        Err(_) => http_response::internal_server_error(),
     }
 }
 
 #[post("/activity", data = "<activity>")]
-pub fn add_activity(_conn: DbConn, activity: Json<NewActivity>) -> Response {
+pub fn add_activity<'r>(_conn: DbConn, activity: Json<NewActivity>) -> response::Result<'r> {
     println!("{:?}", activity.into_inner());
 
-    Response::default()
+    http_response::internal_server_error()
 }
 
 #[get("/activity/all")]
-pub fn activities(token: ProtectedRequest, conn: DbConn) -> Response {
+pub fn activities<'r>(token: ProtectedRequest, conn: DbConn) -> response::Result<'r> {
     match Activity::user_all(conn, &token.id) {
-        Ok(results) => Response::success(results),
-        Err(err) => Response::error(Some(err.to_string()))
+        Ok(results) => http_response::success(results),
+        Err(_) => http_response::internal_server_error(),
     }
 }
