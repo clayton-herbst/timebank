@@ -1,68 +1,74 @@
 use rocket::http::{ContentType, Status};
-use rocket::response::{self, Response};
+use rocket::request::Request;
+use rocket::response::{self, Responder, Response};
 use serde::Serialize;
 use serde_json::to_vec_pretty;
 use std::default::Default;
 use std::io::Cursor;
 
+// Models
+use crate::models::response::{BooleanJson, ErrorJson};
+
 #[derive(Serialize)]
-struct JsonResponse {
-	ok: bool,
-}
-
-impl Default for JsonResponse {
-	fn default() -> Self {
-		JsonResponse { ok: true }
-	}
-}
-
-pub fn success<'r, T>(contents: T) -> response::Result<'r>
+pub enum HttpResponse<T>
 where
 	T: Serialize,
 {
-	let serialized_body = to_vec_pretty(&contents);
+	Ok(T),
+	BadRequest(String),
+	InternalServerError(String),
+	Unauthorized(String),
+}
 
-	match serialized_body {
-		Ok(body) => {
-			let body_stream = Cursor::new(body);
-			Response::build()
-				.status(Status::Ok)
-				.header(ContentType::JSON)
-				.sized_body(body_stream)
-				.ok()
-		}
-		Err(_) => Err(Status::InternalServerError),
+impl Default for HttpResponse<BooleanJson> {
+	fn default() -> HttpResponse<BooleanJson> {
+		HttpResponse::Ok(BooleanJson::default())
 	}
 }
 
-pub fn bad_request<'r>(_message: &'static str) -> response::Result<'r> {
-	let serialized_body = to_vec_pretty(&JsonResponse { ok: false });
-
-	match serialized_body {
-		Ok(body) => {
-			let body_stream = Cursor::new(body);
-			Response::build()
-				.status(Status::BadRequest)
-				.header(ContentType::JSON)
-				.sized_body(body_stream)
-				.ok()
+impl<'r, T> Responder<'r> for HttpResponse<T>
+where
+	T: Serialize,
+{
+	fn respond_to(self, _request: &Request) -> response::Result<'r> {
+		match self {
+			HttpResponse::Ok(contents) => HttpResponseBuilder::build(Status::Ok, contents),
+			HttpResponse::BadRequest(message) => {
+				HttpResponseBuilder::build(Status::BadRequest, ErrorJson::new(message))
+			}
+			HttpResponse::InternalServerError(message) => {
+				HttpResponseBuilder::build(Status::InternalServerError, ErrorJson::new(message))
+			}
+			HttpResponse::Unauthorized(message) => {
+				HttpResponseBuilder::build(Status::Unauthorized, ErrorJson::new(message))
+			}
 		}
-		Err(_) => Err(Status::InternalServerError),
 	}
 }
 
-pub fn internal_server_error<'r>() -> response::Result<'r> {
-	let serialized_body = to_vec_pretty(&JsonResponse { ok: false });
+pub struct HttpResponseBuilder {}
 
-	match serialized_body {
-		Ok(body) => {
-			let body_stream = Cursor::new(body);
-			Response::build()
-				.status(Status::InternalServerError)
-				.header(ContentType::JSON)
-				.sized_body(body_stream)
-				.ok()
+impl HttpResponseBuilder {
+	pub fn build<'r, T>(status: Status, contents: T) -> response::Result<'r>
+	where
+		T: Serialize,
+	{
+		let serialized_body = to_vec_pretty(&contents);
+
+		match serialized_body {
+			Ok(body) => {
+				let body_stream = Cursor::new(body);
+				Response::build()
+					.status(status)
+					.header(ContentType::JSON)
+					.sized_body(body_stream)
+					.ok()
+			}
+			Err(_) => Err(Status::InternalServerError),
 		}
-		Err(_) => Err(Status::InternalServerError),
+	}
+
+	pub fn build_empty<'r>(status: Status) -> response::Result<'r> {
+		Response::build().status(status).ok()
 	}
 }

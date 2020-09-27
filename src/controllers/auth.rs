@@ -24,7 +24,10 @@ impl<'a, 'r> FromRequest<'a, 'r> for ProtectedRequest {
 			req_header_token.expect("Error unwrapping auth token in request header."),
 		) {
 			Ok(jwt_token) => Outcome::Success(jwt_token.claims),
-			Err(_err) => Outcome::Failure((Status::Unauthorized, ())),
+			Err(err) => {
+				println!("{}", err.to_string());
+				Outcome::Failure((Status::Unauthorized, ()))
+			}
 		}
 	}
 }

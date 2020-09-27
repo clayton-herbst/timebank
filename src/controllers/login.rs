@@ -5,10 +5,11 @@ use rocket::Outcome;
 use std::string::String;
 
 // Models
+use crate::models::auth::TokenClaims;
 use crate::models::database::{DbConn, User};
 
 // Helpers
-use crate::helpers::http_response;
+use crate::helpers::http_response::HttpResponseBuilder;
 use crate::helpers::{encode, generate_hash};
 
 pub struct LoginController(User);
@@ -44,7 +45,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for LoginController {
 			}
 			Err(err) => {
 				println!("{}", err);
-				Outcome::Failure((Status::NotFound, ()))
+				Outcome::Failure((Status::BadRequest, ()))
 			}
 		}
 	}
@@ -53,12 +54,12 @@ impl<'a, 'r> FromRequest<'a, 'r> for LoginController {
 impl<'r> Responder<'r> for LoginController {
 	fn respond_to(self, _req: &Request) -> response::Result<'r> {
 		let user = self.0.to_owned();
-		let token = encode::<User>(self.0.into());
+		let token = encode::<TokenClaims>(self.0.into());
 		if token.is_err() {
-			return http_response::internal_server_error();
+			return HttpResponseBuilder::build_empty(Status::InternalServerError);
 		}
 
-		http_response::success(Some(&user)).and_then(|base| {
+		HttpResponseBuilder::build(Status::Ok, &user).and_then(|base| {
 			Response::build_from(base)
 				.header(Header::new("token", token.unwrap()))
 				.ok()
