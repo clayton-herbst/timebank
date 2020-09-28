@@ -37,7 +37,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for LoginController {
 		}
 
 		// fetch user from database
-		let db_user = User::get_user(conn.unwrap(), &user_id_hash.unwrap());
+		let db_user = User::get_user(&conn.unwrap(), &user_id_hash.unwrap());
 		match db_user {
 			Ok(user) => {
 				println!("{:?}", user);

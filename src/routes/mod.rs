@@ -6,11 +6,12 @@ use std::path::{Path, PathBuf};
 // Controllers
 use crate::controllers::auth::ProtectedRequest;
 use crate::controllers::login::LoginController;
+use crate::controllers::signup::SignUpController;
 
 // Models
 use crate::models::activity::NewActivity;
 use crate::models::auth::SignUpUser;
-use crate::models::database::{Activity, Category, DbConn, Status, User};
+use crate::models::database::{Activity, Category, DbConn, Status};
 use crate::models::response::{BooleanJson, ErrorJson};
 
 // Helpers
@@ -43,13 +44,9 @@ pub fn login(controller: LoginController) -> LoginController {
     controller
 }
 
-#[post("/signup", data = "<user>")]
-pub fn signup<'r>(_conn: DbConn, user: Json<SignUpUser>) -> HttpResponse<ErrorJson> {
-    let _user_entry: User = user.into_inner().into();
-
-    //let db_query_err: Option<Error> = User::add_user(conn, &user_entry).err();
-
-    HttpResponse::InternalServerError("Sign up controller not implemented".to_string())
+#[post("/signup", data = "<body>")]
+pub fn signup<'r>(body: Json<SignUpUser>) -> SignUpController {
+    SignUpController::new(body.into_inner())
 }
 
 #[get("/protect")]

@@ -22,14 +22,14 @@ pub struct User {
 }
 
 impl User {
-    pub fn get_user(conn: DbConn, id: &str) -> result::QueryResult<User> {
-        users::table.find(id).first::<User>(&*conn)
+    pub fn get_user(conn: &DbConn, id: &str) -> result::QueryResult<User> {
+        users::table.find(id).first::<User>(&**conn)
     }
 
-    pub fn add_user(conn: DbConn, user: &User) -> result::QueryResult<usize> {
+    pub fn add_user(conn: &DbConn, user: &User) -> result::QueryResult<usize> {
         diesel::insert_into(users::table)
             .values(user)
-            .execute(&*conn)
+            .execute(&**conn)
     }
 }
 
